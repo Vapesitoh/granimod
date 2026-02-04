@@ -575,7 +575,7 @@
                 </div>
                 <div class="form-group">
                     <label for="validityDate">Válida hasta:</label>
-                    <input type="date" id="validityDate" value="2026-02-10">
+                    <input type="date" id="validityDate" value="2026-02-13">
                 </div>
             </div>
             
@@ -639,7 +639,14 @@
             </div>
             
             <div class="features-list">
-           
+                <div class="feature">
+                    <h4><i class="fas fa-gem"></i> Características del Cuarzo</h4>
+                    <ul>
+                        <li>Espesor 1,5cm o 15mm</li>
+                        <li>90% polvo de cuarcita</li>
+                        <li>10% resinas</li>
+                    </ul>
+                </div>
                 <div class="feature">
                     <h4><i class="fas fa-shield-alt"></i> Garantía de Calidad</h4>
                     <p>Productos certificados con los más altos estándares de calidad y durabilidad.</p>
@@ -660,7 +667,7 @@
     <script>
         // Datos iniciales
         let products = [
-            { quantity: "1 ML", description: "Cuarzo Blanco estellar", price: 68, total: 68 }
+            { quantity: "1 ML", description: "Cuarzo Blanco estellar", price: 68.00, total: 68.00 }
         ];
         
         let quotationCounter = localStorage.getItem('quotationCounter') || 0;
@@ -708,17 +715,24 @@
         // Intentar cargar logo.png por defecto
         function loadDefaultLogo() {
             const img = new Image();
+            img.crossOrigin = 'anonymous'; // Permite acceso a la imagen si es del mismo origen
+            
             img.onload = function() {
-                // Crear un canvas para convertir la imagen a base64
-                const canvas = document.createElement('canvas');
-                canvas.width = this.width;
-                canvas.height = this.height;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(this, 0, 0);
-                
-                companyLogo = canvas.toDataURL('image/png');
-                updateLogoDisplay();
-                defaultLogoLoaded = true;
+                // Convertir la imagen a base64 usando canvas
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = this.naturalWidth || this.width;
+                    canvas.height = this.naturalHeight || this.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(this, 0, 0);
+                    
+                    companyLogo = canvas.toDataURL('image/png');
+                    updateLogoDisplay();
+                    defaultLogoLoaded = true;
+                    console.log("Logo cargado correctamente desde logo.png");
+                } catch (error) {
+                    console.error("Error al procesar el logo:", error);
+                }
             };
             
             img.onerror = function() {
@@ -728,6 +742,14 @@
             
             // Intentar cargar logo.png desde la misma carpeta
             img.src = 'logo.png';
+            
+            // Si falla, intentar con un path absoluto
+            setTimeout(() => {
+                if (!companyLogo && img.complete && img.naturalWidth === 0) {
+                    console.log("Intentando cargar logo desde ruta absoluta...");
+                    img.src = window.location.pathname.replace(/\/[^\/]*$/, '/') + 'logo.png';
+                }
+            }, 1000);
         }
         
         // Usar logo por defecto
@@ -886,7 +908,6 @@
             const clientRUC = document.getElementById('clientRUC').value;
             const quotationNumber = document.getElementById('quotationNumber').value;
             const validityDate = document.getElementById('validityDate').value;
-            const paymentMethod = document.getElementById('paymentMethod').value;
             const notes = document.getElementById('notes').value;
             const today = new Date();
             const formattedToday = today.toLocaleDateString('es-ES', {
@@ -949,7 +970,7 @@
                 </div>
                 
                 <div class="specifications">
-                    <strong>➢ Características de <strong>Cuarzo</strong>:</strong>
+                    <strong>Características de Cuarzo:</strong>
                     <ul>
                         <li>Espesor 1,5cm o 15mm.</li>
                         <li>90% polvo de cuarcita</li>
@@ -982,8 +1003,9 @@
                     </div>
                     
                     <div class="signature">
-                        <div class="signature-line">Ing. Melanin Ganan</div>
-                        <div><strong>Asesora Comercial – Responsable de obra</strong></div>
+                        <hr style="margin: 30px 0 10px 0; border: none; border-top: 1px solid #333;">
+                        <div style="font-weight: bold; text-align: right;">Ing. Melanin Ganan</div>
+                        <div style="text-align: right;"><strong>Asesora Comercial – Responsable de obra</strong></div>
                     </div>
                 </div>
             `;
@@ -1008,7 +1030,7 @@
             return methods[value] || value;
         }
         
-        // Función para generar PDF
+        // Función para generar PDF (CORREGIDA para incluir el logo)
         function generatePDF() {
             try {
                 // Incrementar contador
@@ -1027,7 +1049,6 @@
                 const clientRUC = document.getElementById('clientRUC').value;
                 const quotationNumber = document.getElementById('quotationNumber').value;
                 const validityDate = document.getElementById('validityDate').value;
-                const paymentMethod = document.getElementById('paymentMethod').value;
                 const notes = document.getElementById('notes').value;
                 const today = new Date();
                 const formattedToday = today.toLocaleDateString('es-ES', {
@@ -1047,16 +1068,57 @@
                 // Calcular total
                 const total = products.reduce((sum, product) => sum + (product.price || 0), 0);
                 
-                // Encabezado
-                doc.setFontSize(24);
-                doc.setTextColor(26, 82, 118); // Color primario
-                doc.text("GRANIMOD", doc.internal.pageSize.width - margin - 50, yPos);
+                // **AGREGAR LOGO AL PDF**
+                if (companyLogo) {
+                    try {
+                        // Añadir el logo en la parte superior izquierda
+                        const logoWidth = 30; // Ancho del logo en mm
+                        const logoHeight = 30; // Alto del logo en mm
+                        doc.addImage(companyLogo, 'PNG', margin, yPos, logoWidth, logoHeight);
+                        
+                        // Añadir nombre de la empresa al lado del logo
+                        doc.setFontSize(24);
+                        doc.setTextColor(26, 82, 118);
+                        doc.text("GRANIMOD", margin + logoWidth + 10, yPos + 10);
+                        
+                        // Fecha al lado derecho
+                        doc.setFontSize(12);
+                        doc.setTextColor(100, 100, 100);
+                        const fechaWidth = doc.getTextWidth(`Cuenca, ${formattedToday}`);
+                        doc.text(`Cuenca, ${formattedToday}`, doc.internal.pageSize.width - margin - fechaWidth, yPos + 10);
+                        
+                        yPos += logoHeight + 10;
+                        
+                    } catch (logoError) {
+                        console.error("Error al agregar logo al PDF:", logoError);
+                        // Continuar sin logo si hay error
+                        doc.setFontSize(24);
+                        doc.setTextColor(26, 82, 118);
+                        doc.text("GRANIMOD", margin, yPos);
+                        
+                        doc.setFontSize(12);
+                        doc.setTextColor(100, 100, 100);
+                        doc.text(`Cuenca, ${formattedToday}`, doc.internal.pageSize.width - margin - 50, yPos);
+                        
+                        yPos += 15;
+                    }
+                } else {
+                    // Sin logo
+                    doc.setFontSize(24);
+                    doc.setTextColor(26, 82, 118);
+                    doc.text("GRANIMOD", margin, yPos);
+                    
+                    doc.setFontSize(12);
+                    doc.setTextColor(100, 100, 100);
+                    doc.text(`Cuenca, ${formattedToday}`, doc.internal.pageSize.width - margin - 50, yPos);
+                    
+                    yPos += 15;
+                }
                 
-                doc.setFontSize(12);
-                doc.setTextColor(100, 100, 100);
-                doc.text(`Cuenca, ${formattedToday}`, margin, yPos);
-                
-                yPos += 15;
+                // Línea divisoria
+                doc.setDrawColor(200, 200, 200);
+                doc.line(margin, yPos, doc.internal.pageSize.width - margin, yPos);
+                yPos += 10;
                 
                 // Número de cotización
                 doc.setFontSize(18);
@@ -1073,7 +1135,20 @@
                 yPos += 15;
                 
                 // Características del cuarzo
-          
+                doc.setFontSize(12);
+                doc.setTextColor(26, 82, 118);
+                doc.text("Características de Cuarzo:", margin, yPos);
+                yPos += 7;
+                
+                doc.setFontSize(11);
+                doc.setTextColor(0, 0, 0);
+                doc.text("- Espesor 1,5cm o 15mm.", margin + 5, yPos);
+                yPos += 6;
+                doc.text("- 90% polvo de cuarcita", margin + 5, yPos);
+                yPos += 6;
+                doc.text("- 10% resinas.", margin + 5, yPos);
+                yPos += 10;
+                
                 // Preparar datos de la tabla
                 const tableHeaders = [["CANTIDAD", "Producto", "Valor ml", "Sub Total:"]];
                 const tableData = products.map(product => [
@@ -1086,7 +1161,7 @@
                 // Añadir fila de total
                 tableData.push(["", "", "TOTAL:", `$${total.toFixed(2)}`]);
                 
-                // Generar tabla usando autoTable (verificar que esté disponible)
+                // Generar tabla usando autoTable
                 if (typeof doc.autoTable === 'function') {
                     doc.autoTable({
                         startY: yPos,
@@ -1112,9 +1187,6 @@
                     yPos = doc.lastAutoTable.finalY + 15;
                 } else {
                     // Fallback si autoTable no está disponible
-                    showError("Función autoTable no disponible. Generando tabla manualmente...");
-                    
-                    // Generar tabla manualmente
                     const colWidths = [30, 80, 30, 30];
                     const startX = margin;
                     
@@ -1166,23 +1238,27 @@
                     }
                 });
                 
-                yPos += 20;
+                yPos += 15;
+                
+                // Línea divisoria para la firma
+                doc.setDrawColor(0, 0, 0);
+                doc.line(doc.internal.pageSize.width - margin - 80, yPos, doc.internal.pageSize.width - margin, yPos);
+                yPos += 10;
                 
                 // Firma
-                doc.text("_________________________", doc.internal.pageSize.width - margin - 60, yPos);
-                yPos += 7;
-                doc.text("Ing. Melanin Ganan", doc.internal.pageSize.width - margin - 55, yPos);
+                doc.text("Ing. Melanin Ganan", doc.internal.pageSize.width - margin - 60, yPos);
                 yPos += 6;
-                doc.text("Asesora Comercial – Responsable de obra", doc.internal.pageSize.width - margin - 85, yPos);
+                doc.text("Asesora Comercial – Responsable de obra", doc.internal.pageSize.width - margin - 90, yPos);
                 
                 // Guardar PDF
-                doc.save(`GRANIMOD_Cotizacion_${quotationNumber}.pdf`);
+                const filename = `GRANIMOD_Cotizacion_${quotationNumber}.pdf`;
+                doc.save(filename);
                 
-                showMessage(`PDF generado exitosamente: GRANIMOD_Cotizacion_${quotationNumber}.pdf`, "success");
+                showMessage(`PDF generado exitosamente: ${filename}`, "success");
                 
             } catch (error) {
                 console.error("Error al generar PDF:", error);
-                showError("Error al generar el PDF. Por favor, intente nuevamente. Detalle: " + error.message);
+                showError("Error al generar el PDF. Detalle: " + error.message);
             }
         }
         
@@ -1193,7 +1269,14 @@
                 document.getElementById('clientName').value = '';
                 document.getElementById('clientRUC').value = '';
                 document.getElementById('quotationNumber').value = '001-';
-                document.getElementById('validityDate').value = '';
+                
+                // Configurar fecha por defecto (10 días desde hoy)
+                const today = new Date();
+                const futureDate = new Date(today);
+                futureDate.setDate(today.getDate() + 10);
+                const formattedFutureDate = futureDate.toISOString().split('T')[0];
+                document.getElementById('validityDate').value = formattedFutureDate;
+                
                 document.getElementById('paymentMethod').value = 'efectivo';
                 document.getElementById('notes').value = '- Cotización Válida hasta la fecha indicada.\n- Forma de pago, por transferencia o efectivo.\n- Precio del material incluye IVA.';
                 document.getElementById('logoUpload').value = '';
@@ -1204,7 +1287,7 @@
                 
                 // Restablecer productos
                 products = [
-                    { quantity: "1 ML", description: "Cuarzo Blanco estellar", price: 68, total: 68 }
+                    { quantity: "1 ML", description: "Cuarzo Blanco estellar", price: 68.00, total: 68.00 }
                 ];
                 
                 renderProducts();
