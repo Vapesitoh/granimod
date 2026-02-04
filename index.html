@@ -1,0 +1,1218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRANIMOD - Generador de Cotizaciones</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.5.28/dist/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #1a5276;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #f8f9fa;
+            --dark-color: #2c3e50;
+            --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fa;
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .logo-placeholder {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+        
+        .logo-placeholder img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .company-info h1 {
+            color: var(--primary-color);
+            font-size: 2.5rem;
+            margin-bottom: 5px;
+        }
+        
+        .company-info p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+        
+        .header-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .counter {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-weight: bold;
+            text-align: center;
+            font-size: 1.1rem;
+        }
+        
+        .date-display {
+            color: #666;
+            font-size: 1rem;
+            text-align: right;
+        }
+        
+        .form-section, .preview-section {
+            background-color: white;
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+            height: fit-content;
+        }
+        
+        .section-title {
+            color: var(--primary-color);
+            margin-bottom: 25px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .section-title i {
+            color: var(--secondary-color);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--secondary-color);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .product-table {
+            margin: 25px 0;
+        }
+        
+        .product-header {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 6px 6px 0 0;
+            font-weight: 600;
+        }
+        
+        .product-row {
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr 1fr;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            align-items: center;
+        }
+        
+        .product-row:last-child {
+            border-bottom: none;
+        }
+        
+        .product-row input {
+            margin: 0;
+            padding: 8px 10px;
+        }
+        
+        .add-product-btn {
+            background-color: #27ae60;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            transition: background-color 0.3s;
+        }
+        
+        .add-product-btn:hover {
+            background-color: #219653;
+        }
+        
+        .delete-product-btn {
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .delete-product-btn:hover {
+            background-color: #c0392b;
+        }
+        
+        .actions {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 14px 28px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 180px;
+        }
+        
+        .btn-primary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #2980b9;
+        }
+        
+        .btn-secondary {
+            background-color: #7f8c8d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #6c7b7d;
+        }
+        
+        .btn-success {
+            background-color: #27ae60;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #219653;
+        }
+        
+        /* Estilos para la vista previa de la cotización */
+        .quotation-preview {
+            background-color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 0 0 1px #ddd;
+            font-family: 'Georgia', 'Times New Roman', serif;
+            max-height: 700px;
+            overflow-y: auto;
+        }
+        
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 20px;
+        }
+        
+        .preview-logo {
+            width: 120px;
+            height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            background-color: white;
+        }
+        
+        .preview-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .preview-company {
+            text-align: right;
+        }
+        
+        .preview-company h2 {
+            color: var(--primary-color);
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        
+        .preview-date {
+            color: #666;
+            font-style: italic;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+        }
+        
+        .preview-company div:last-child {
+            color: #666;
+            font-size: 1rem;
+        }
+        
+        .quotation-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+        
+        .client-info {
+            margin: 25px 0;
+            line-height: 1.8;
+            font-size: 17px;
+        }
+        
+        .specifications {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 25px 0;
+            border-left: 4px solid var(--primary-color);
+        }
+        
+        .specifications strong {
+            color: var(--primary-color);
+            font-size: 16px;
+        }
+        
+        .specifications ul {
+            padding-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .specifications li {
+            margin-bottom: 8px;
+            font-size: 15px;
+        }
+        
+        .preview-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            font-size: 16px;
+        }
+        
+        .preview-table th {
+            background-color: #f2f2f2;
+            padding: 12px 15px;
+            text-align: left;
+            border: 1px solid #ddd;
+            color: var(--primary-color);
+        }
+        
+        .preview-table td {
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+        }
+        
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        
+        .quotation-footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        
+        .validity {
+            margin-bottom: 15px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .signature {
+            margin-top: 40px;
+            text-align: right;
+        }
+        
+        .signature-line {
+            border-top: 1px solid #333;
+            width: 250px;
+            margin-left: auto;
+            margin-top: 50px;
+            padding-top: 5px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        
+        .preview-notes {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 25px 0;
+            font-style: italic;
+            font-size: 15px;
+        }
+        
+        .preview-notes strong {
+            color: var(--primary-color);
+        }
+        
+        .features-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin: 25px 0;
+        }
+        
+        .feature {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid var(--secondary-color);
+        }
+        
+        .feature h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-upload {
+            margin: 15px 0;
+            padding: 15px;
+            border: 2px dashed #ddd;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .logo-upload label {
+            cursor: pointer;
+            display: block;
+            font-size: 1.1rem;
+        }
+        
+        .logo-preview {
+            max-width: 150px;
+            max-height: 150px;
+            margin: 10px auto;
+            display: block;
+        }
+        
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .error-message {
+            background-color: #fde8e8;
+            color: #c53030;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+            display: none;
+        }
+        
+        .default-logo-btn {
+            margin-top: 10px;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .default-logo-btn:hover {
+            background-color: #e0e0e0;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="logo-section">
+            <div class="logo-placeholder" id="logoPreview">
+                <span>LOGO GRANIMOD</span>
+            </div>
+            <div class="company-info">
+                <h1>GRANIMOD</h1>
+                <p>Sistemas de Cotización de Cuarzo</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <div class="date-display" id="currentDate"></div>
+            <div class="counter">
+                <span id="counter">0</span> cotizaciones generadas
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
+        <!-- Sección de formulario -->
+        <section class="form-section">
+            <h2 class="section-title"><i class="fas fa-edit"></i> Datos de la Cotización</h2>
+            
+            <div class="logo-upload">
+                <label for="logoUpload">
+                    <i class="fas fa-upload"></i> Subir logo de la empresa (opcional)
+                    <input type="file" id="logoUpload" accept="image/*" style="display: none;">
+                </label>
+                <p style="font-size: 0.9rem; color: #666; margin-top: 5px;">Suba una imagen PNG, JPG o JPEG. Tamaño recomendado: 200x200px</p>
+                <button class="default-logo-btn" id="useDefaultLogo">
+                    <i class="fas fa-image"></i> Usar logo por defecto
+                </button>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="clientName">Nombre del Cliente:</label>
+                    <input type="text" id="clientName" value="Rogelio Ganan Nono">
+                </div>
+                <div class="form-group">
+                    <label for="clientRUC">RUC:</label>
+                    <input type="text" id="clientRUC" value="0603748864001">
+                </div>
+            </div>
+            
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="quotationNumber">Número de Cotización:</label>
+                    <input type="text" id="quotationNumber" value="001-006016">
+                </div>
+                <div class="form-group">
+                    <label for="validityDate">Válida hasta:</label>
+                    <input type="date" id="validityDate" value="2026-02-10">
+                </div>
+            </div>
+            
+            <h3 class="section-title" style="margin-top: 30px;"><i class="fas fa-box"></i> Productos</h3>
+            
+            <div class="product-table">
+                <div class="product-header">
+                    <div>Cantidad</div>
+                    <div>Producto</div>
+                    <div>Valor ml</div>
+                    <div>Acciones</div>
+                </div>
+                
+                <div id="productsContainer">
+                    <!-- Los productos se agregarán aquí dinámicamente -->
+                </div>
+            </div>
+            
+            <button id="addProduct" class="add-product-btn">
+                <i class="fas fa-plus"></i> Agregar Producto
+            </button>
+            
+            <div class="form-group">
+                <label for="paymentMethod">Forma de Pago:</label>
+                <select id="paymentMethod">
+                    <option value="transferencia">Transferencia Bancaria</option>
+                    <option value="efectivo" selected>Efectivo</option>
+                    <option value="tarjeta">Tarjeta de Crédito/Débito</option>
+                    <option value="cheque">Cheque</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Observaciones:</label>
+                <textarea id="notes" rows="4">- Cotización Válida hasta la fecha indicada.
+- Forma de pago, por transferencia o efectivo.
+- Precio del material incluye IVA.</textarea>
+            </div>
+            
+            <div class="actions">
+                <button id="generatePreview" class="btn btn-primary">
+                    <i class="fas fa-eye"></i> Actualizar Vista Previa
+                </button>
+                <button id="generatePDF" class="btn btn-success">
+                    <i class="fas fa-file-pdf"></i> Generar PDF
+                </button>
+                <button id="resetForm" class="btn btn-secondary">
+                    <i class="fas fa-redo"></i> Limpiar Formulario
+                </button>
+            </div>
+            
+            <div id="errorMessage" class="error-message"></div>
+        </section>
+        
+        <!-- Sección de vista previa -->
+        <section class="preview-section">
+            <h2 class="section-title"><i class="fas fa-file-alt"></i> Vista Previa de Cotización</h2>
+            
+            <div id="quotationPreview" class="quotation-preview">
+                <!-- La vista previa se generará aquí -->
+            </div>
+            
+            <div class="features-list">
+           
+                <div class="feature">
+                    <h4><i class="fas fa-shield-alt"></i> Garantía de Calidad</h4>
+                    <p>Productos certificados con los más altos estándares de calidad y durabilidad.</p>
+                </div>
+                <div class="feature">
+                    <h4><i class="fas fa-shipping-fast"></i> Entrega Rápida</h4>
+                    <p>Envíos a nivel nacional con tiempos de entrega de 10-15 días hábiles.</p>
+                </div>
+            </div>
+        </section>
+    </div>
+    
+    <footer>
+        <p>GRANIMOD - Generador de Cotizaciones &copy; 2025 | Ing. Melanin Ganan - Asesora Comercial – Responsable de obra</p>
+        <p><i class="fas fa-phone"></i> Contacto: +593 98 765 4321 | <i class="fas fa-envelope"></i> info@granimod.com | <i class="fas fa-map-marker-alt"></i> Cuenca, Ecuador</p>
+    </footer>
+
+    <script>
+        // Datos iniciales
+        let products = [
+            { quantity: "1 ML", description: "Cuarzo Blanco estellar", price: 68, total: 68 }
+        ];
+        
+        let quotationCounter = localStorage.getItem('quotationCounter') || 0;
+        let companyLogo = null;
+        let defaultLogoLoaded = false;
+        
+        // Inicializar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            // Mostrar fecha actual
+            const today = new Date();
+            const formattedDate = today.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            document.getElementById('currentDate').textContent = `Cuenca, ${formattedDate}`;
+            
+            // Actualizar contador
+            document.getElementById('counter').textContent = quotationCounter;
+            
+            // Cargar productos iniciales
+            renderProducts();
+            
+            // Intentar cargar logo por defecto
+            loadDefaultLogo();
+            
+            // Generar vista previa inicial
+            generatePreview();
+            
+            // Configurar eventos
+            document.getElementById('addProduct').addEventListener('click', addProduct);
+            document.getElementById('generatePreview').addEventListener('click', generatePreview);
+            document.getElementById('generatePDF').addEventListener('click', generatePDF);
+            document.getElementById('resetForm').addEventListener('click', resetForm);
+            document.getElementById('logoUpload').addEventListener('change', handleLogoUpload);
+            document.getElementById('useDefaultLogo').addEventListener('click', useDefaultLogo);
+            
+            // Configurar fecha por defecto (10 días desde hoy)
+            const futureDate = new Date(today);
+            futureDate.setDate(today.getDate() + 10);
+            const formattedFutureDate = futureDate.toISOString().split('T')[0];
+            document.getElementById('validityDate').value = formattedFutureDate;
+        });
+        
+        // Intentar cargar logo.png por defecto
+        function loadDefaultLogo() {
+            const img = new Image();
+            img.onload = function() {
+                // Crear un canvas para convertir la imagen a base64
+                const canvas = document.createElement('canvas');
+                canvas.width = this.width;
+                canvas.height = this.height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(this, 0, 0);
+                
+                companyLogo = canvas.toDataURL('image/png');
+                updateLogoDisplay();
+                defaultLogoLoaded = true;
+            };
+            
+            img.onerror = function() {
+                console.log("No se encontró logo.png en la carpeta");
+                defaultLogoLoaded = false;
+            };
+            
+            // Intentar cargar logo.png desde la misma carpeta
+            img.src = 'logo.png';
+        }
+        
+        // Usar logo por defecto
+        function useDefaultLogo() {
+            if (defaultLogoLoaded) {
+                generatePreview();
+                showMessage("Logo por defecto cargado correctamente", "success");
+            } else {
+                showError("No se encontró logo.png en la carpeta. Por favor, suba un logo manualmente.");
+            }
+        }
+        
+        // Función para manejar la subida del logo
+        function handleLogoUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                companyLogo = e.target.result;
+                updateLogoDisplay();
+                generatePreview();
+                showMessage("Logo subido correctamente", "success");
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        // Actualizar visualización del logo
+        function updateLogoDisplay() {
+            const logoPreview = document.getElementById('logoPreview');
+            if (companyLogo) {
+                logoPreview.innerHTML = `<img src="${companyLogo}" alt="Logo GRANIMOD">`;
+            } else {
+                logoPreview.innerHTML = '<span>LOGO GRANIMOD</span>';
+            }
+        }
+        
+        // Función para renderizar productos
+        function renderProducts() {
+            const container = document.getElementById('productsContainer');
+            container.innerHTML = '';
+            
+            products.forEach((product, index) => {
+                const row = document.createElement('div');
+                row.className = 'product-row';
+                row.innerHTML = `
+                    <div><input type="text" class="product-quantity" value="${product.quantity}" data-index="${index}"></div>
+                    <div><input type="text" class="product-description" value="${product.description}" data-index="${index}"></div>
+                    <div><input type="number" class="product-price" value="${product.price}" data-index="${index}" min="0" step="0.01"></div>
+                    <div>
+                        <button class="delete-product-btn" data-index="${index}">
+                            <i class="fas fa-trash"></i> Eliminar
+                        </button>
+                    </div>
+                `;
+                container.appendChild(row);
+            });
+            
+            // Agregar event listeners a los campos de producto
+            document.querySelectorAll('.product-quantity').forEach(input => {
+                input.addEventListener('input', updateProduct);
+            });
+            
+            document.querySelectorAll('.product-description').forEach(input => {
+                input.addEventListener('input', updateProduct);
+            });
+            
+            document.querySelectorAll('.product-price').forEach(input => {
+                input.addEventListener('input', updateProduct);
+            });
+            
+            // Agregar event listeners a los botones de eliminar
+            document.querySelectorAll('.delete-product-btn').forEach(button => {
+                button.addEventListener('click', function() {
+                    const index = parseInt(this.getAttribute('data-index'));
+                    deleteProduct(index);
+                });
+            });
+        }
+        
+        // Función para agregar un nuevo producto
+        function addProduct() {
+            products.push({
+                quantity: "1 ML",
+                description: "Nuevo Producto de Cuarzo",
+                price: 0,
+                total: 0
+            });
+            renderProducts();
+            generatePreview();
+        }
+        
+        // Función para actualizar un producto
+        function updateProduct(event) {
+            const index = parseInt(event.target.getAttribute('data-index'));
+            const field = event.target.className;
+            
+            if (field.includes('product-quantity')) {
+                products[index].quantity = event.target.value;
+            } else if (field.includes('product-description')) {
+                products[index].description = event.target.value;
+            } else if (field.includes('product-price')) {
+                products[index].price = parseFloat(event.target.value) || 0;
+                products[index].total = products[index].price;
+            }
+            
+            // Actualizar vista previa automáticamente
+            generatePreview();
+        }
+        
+        // Función para eliminar un producto
+        function deleteProduct(index) {
+            if (products.length > 1) {
+                products.splice(index, 1);
+                renderProducts();
+                generatePreview();
+            } else {
+                showError('Debe haber al menos un producto en la cotización.');
+            }
+        }
+        
+        // Función para mostrar errores
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            errorDiv.style.backgroundColor = '#fde8e8';
+            errorDiv.style.color = '#c53030';
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        
+        // Función para mostrar mensajes
+        function showMessage(message, type) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                errorDiv.style.backgroundColor = '#d4edda';
+                errorDiv.style.color = '#155724';
+            } else {
+                errorDiv.style.backgroundColor = '#fde8e8';
+                errorDiv.style.color = '#c53030';
+            }
+            
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Función para generar la vista previa
+        function generatePreview() {
+            const clientName = document.getElementById('clientName').value;
+            const clientRUC = document.getElementById('clientRUC').value;
+            const quotationNumber = document.getElementById('quotationNumber').value;
+            const validityDate = document.getElementById('validityDate').value;
+            const paymentMethod = document.getElementById('paymentMethod').value;
+            const notes = document.getElementById('notes').value;
+            const today = new Date();
+            const formattedToday = today.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            // Formatear fecha de validez
+            const dateObj = new Date(validityDate);
+            const formattedValidityDate = dateObj.toLocaleDateString('es-ES', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+            
+            // Calcular total
+            const total = products.reduce((sum, product) => sum + (product.price || 0), 0);
+            
+            // Generar HTML de la vista previa
+            let productsHTML = '';
+            products.forEach(product => {
+                productsHTML += `
+                    <tr>
+                        <td>${product.quantity}</td>
+                        <td>${product.description}</td>
+                        <td>$${product.price.toFixed(2)}</td>
+                        <td>$${product.price.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+            
+            // Agregar fila de total
+            productsHTML += `
+                <tr class="total-row">
+                    <td colspan="3" style="text-align: right;"><strong>TOTAL:</strong></td>
+                    <td><strong>$${total.toFixed(2)}</strong></td>
+                </tr>
+            `;
+            
+            const previewHTML = `
+                <div class="preview-header">
+                    <div class="preview-logo" id="previewLogoImg">
+                        ${companyLogo ? `<img src="${companyLogo}" alt="Logo GRANIMOD">` : 'LOGO GRANIMOD'}
+                    </div>
+                    <div class="preview-company">
+                        <h2>GRANIMOD</h2>
+                        <div class="preview-date">Cuenca, ${formattedToday}</div>
+                        <div>Sistemas de Cotización de Cuarzo</div>
+                    </div>
+                </div>
+                
+                <hr style="margin: 20px 0; border: none; border-top: 2px solid #ddd;">
+                
+                <div class="quotation-title">COTIZACIÓN ${quotationNumber}</div>
+                
+                <div class="client-info">
+                    <strong>SR. ${clientName}</strong><br>
+                    <strong>RUC:</strong> ${clientRUC}<br>
+                </div>
+                
+                <div class="specifications">
+                    <strong>➢ Características de <strong>Cuarzo</strong>:</strong>
+                    <ul>
+                        <li>Espesor 1,5cm o 15mm.</li>
+                        <li>90% polvo de cuarcita</li>
+                        <li>10% resinas.</li>
+                    </ul>
+                </div>
+                
+                <table class="preview-table">
+                    <thead>
+                        <tr>
+                            <th>CANTIDAD</th>
+                            <th>Producto</th>
+                            <th>Valor ml</th>
+                            <th>Sub Total:</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${productsHTML}
+                    </tbody>
+                </table>
+                
+                <div class="preview-notes">
+                    <strong>Detalles y observaciones:</strong><br>
+                    ${notes.split('\n').join('<br>')}
+                </div>
+                
+                <div class="quotation-footer">
+                    <div class="validity">
+                        <strong>Cotización Válida hasta el ${formattedValidityDate}.</strong>
+                    </div>
+                    
+                    <div class="signature">
+                        <div class="signature-line">Ing. Melanin Ganan</div>
+                        <div><strong>Asesora Comercial – Responsable de obra</strong></div>
+                    </div>
+                </div>
+            `;
+            
+            document.getElementById('quotationPreview').innerHTML = previewHTML;
+            
+            // Actualizar el logo en la vista previa
+            const previewLogo = document.getElementById('previewLogoImg');
+            if (companyLogo) {
+                previewLogo.innerHTML = `<img src="${companyLogo}" alt="Logo GRANIMOD">`;
+            }
+        }
+        
+        // Función para obtener el texto del método de pago
+        function getPaymentMethodText(value) {
+            const methods = {
+                'transferencia': 'Transferencia Bancaria',
+                'efectivo': 'Efectivo',
+                'tarjeta': 'Tarjeta de Crédito/Débito',
+                'cheque': 'Cheque'
+            };
+            return methods[value] || value;
+        }
+        
+        // Función para generar PDF
+        function generatePDF() {
+            try {
+                // Incrementar contador
+                quotationCounter++;
+                localStorage.setItem('quotationCounter', quotationCounter);
+                document.getElementById('counter').textContent = quotationCounter;
+                
+                // Crear documento PDF
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF('p', 'mm', 'a4');
+                const margin = 20;
+                let yPos = margin;
+                
+                // Datos del formulario
+                const clientName = document.getElementById('clientName').value;
+                const clientRUC = document.getElementById('clientRUC').value;
+                const quotationNumber = document.getElementById('quotationNumber').value;
+                const validityDate = document.getElementById('validityDate').value;
+                const paymentMethod = document.getElementById('paymentMethod').value;
+                const notes = document.getElementById('notes').value;
+                const today = new Date();
+                const formattedToday = today.toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                // Formatear fecha de validez
+                const dateObj = new Date(validityDate);
+                const formattedValidityDate = dateObj.toLocaleDateString('es-ES', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+                
+                // Calcular total
+                const total = products.reduce((sum, product) => sum + (product.price || 0), 0);
+                
+                // Encabezado
+                doc.setFontSize(24);
+                doc.setTextColor(26, 82, 118); // Color primario
+                doc.text("GRANIMOD", doc.internal.pageSize.width - margin - 50, yPos);
+                
+                doc.setFontSize(12);
+                doc.setTextColor(100, 100, 100);
+                doc.text(`Cuenca, ${formattedToday}`, margin, yPos);
+                
+                yPos += 15;
+                
+                // Número de cotización
+                doc.setFontSize(18);
+                doc.setTextColor(26, 82, 118);
+                doc.text(`COTIZACIÓN ${quotationNumber}`, margin, yPos);
+                yPos += 10;
+                
+                // Información del cliente
+                doc.setFontSize(12);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`SR. ${clientName}`, margin, yPos);
+                yPos += 7;
+                doc.text(`RUC: ${clientRUC}`, margin, yPos);
+                yPos += 15;
+                
+                // Características del cuarzo
+          
+                // Preparar datos de la tabla
+                const tableHeaders = [["CANTIDAD", "Producto", "Valor ml", "Sub Total:"]];
+                const tableData = products.map(product => [
+                    product.quantity,
+                    product.description,
+                    `$${product.price.toFixed(2)}`,
+                    `$${product.price.toFixed(2)}`
+                ]);
+                
+                // Añadir fila de total
+                tableData.push(["", "", "TOTAL:", `$${total.toFixed(2)}`]);
+                
+                // Generar tabla usando autoTable (verificar que esté disponible)
+                if (typeof doc.autoTable === 'function') {
+                    doc.autoTable({
+                        startY: yPos,
+                        head: tableHeaders,
+                        body: tableData,
+                        margin: { left: margin, right: margin },
+                        styles: { fontSize: 11 },
+                        headStyles: { 
+                            fillColor: [26, 82, 118],
+                            textColor: [255, 255, 255],
+                            fontStyle: 'bold'
+                        },
+                        alternateRowStyles: { fillColor: [245, 245, 245] },
+                        bodyStyles: { textColor: [0, 0, 0] },
+                        didParseCell: function(data) {
+                            if (data.row.index === tableData.length - 1) {
+                                data.cell.styles.fontStyle = 'bold';
+                                data.cell.styles.fillColor = [240, 240, 240];
+                            }
+                        }
+                    });
+                    
+                    yPos = doc.lastAutoTable.finalY + 15;
+                } else {
+                    // Fallback si autoTable no está disponible
+                    showError("Función autoTable no disponible. Generando tabla manualmente...");
+                    
+                    // Generar tabla manualmente
+                    const colWidths = [30, 80, 30, 30];
+                    const startX = margin;
+                    
+                    // Encabezados de tabla
+                    tableHeaders[0].forEach((header, i) => {
+                        doc.setFillColor(26, 82, 118);
+                        doc.setTextColor(255, 255, 255);
+                        doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), yPos, colWidths[i], 8, 'F');
+                        doc.text(header, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0) + 2, yPos + 6);
+                    });
+                    
+                    yPos += 8;
+                    
+                    // Datos de la tabla
+                    tableData.forEach((row, rowIndex) => {
+                        row.forEach((cell, i) => {
+                            if (rowIndex === tableData.length - 1) {
+                                doc.setFontStyle('bold');
+                                doc.setFillColor(240, 240, 240);
+                                doc.rect(startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0), yPos, colWidths[i], 8, 'F');
+                            }
+                            doc.setTextColor(0, 0, 0);
+                            doc.text(cell, startX + colWidths.slice(0, i).reduce((a, b) => a + b, 0) + 2, yPos + 6);
+                            doc.setFontStyle('normal');
+                        });
+                        yPos += 8;
+                    });
+                    
+                    yPos += 10;
+                }
+                
+                // Detalles y observaciones
+                doc.setFontSize(12);
+                doc.setTextColor(26, 82, 118);
+                doc.text("Detalles y observaciones:", margin, yPos);
+                yPos += 7;
+                
+                doc.setFontSize(11);
+                doc.setTextColor(0, 0, 0);
+                doc.text(`- Cotización Válida hasta el ${formattedValidityDate}.`, margin, yPos);
+                yPos += 6;
+                
+                // Separar notas por líneas
+                const notesLines = notes.split('\n');
+                notesLines.forEach(line => {
+                    if (line.trim()) {
+                        doc.text(line, margin, yPos);
+                        yPos += 6;
+                    }
+                });
+                
+                yPos += 20;
+                
+                // Firma
+                doc.text("_________________________", doc.internal.pageSize.width - margin - 60, yPos);
+                yPos += 7;
+                doc.text("Ing. Melanin Ganan", doc.internal.pageSize.width - margin - 55, yPos);
+                yPos += 6;
+                doc.text("Asesora Comercial – Responsable de obra", doc.internal.pageSize.width - margin - 85, yPos);
+                
+                // Guardar PDF
+                doc.save(`GRANIMOD_Cotizacion_${quotationNumber}.pdf`);
+                
+                showMessage(`PDF generado exitosamente: GRANIMOD_Cotizacion_${quotationNumber}.pdf`, "success");
+                
+            } catch (error) {
+                console.error("Error al generar PDF:", error);
+                showError("Error al generar el PDF. Por favor, intente nuevamente. Detalle: " + error.message);
+            }
+        }
+        
+        // Función para resetear el formulario
+        function resetForm() {
+            if (confirm('¿Está seguro de que desea limpiar el formulario? Se perderán todos los datos actuales.')) {
+                // Restablecer valores por defecto
+                document.getElementById('clientName').value = '';
+                document.getElementById('clientRUC').value = '';
+                document.getElementById('quotationNumber').value = '001-';
+                document.getElementById('validityDate').value = '';
+                document.getElementById('paymentMethod').value = 'efectivo';
+                document.getElementById('notes').value = '- Cotización Válida hasta la fecha indicada.\n- Forma de pago, por transferencia o efectivo.\n- Precio del material incluye IVA.';
+                document.getElementById('logoUpload').value = '';
+                
+                // Restablecer logo
+                companyLogo = null;
+                updateLogoDisplay();
+                
+                // Restablecer productos
+                products = [
+                    { quantity: "1 ML", description: "Cuarzo Blanco estellar", price: 68, total: 68 }
+                ];
+                
+                renderProducts();
+                generatePreview();
+                
+                showMessage("Formulario restablecido correctamente", "success");
+            }
+        }
+    </script>
+</body>
+</html>
